@@ -1,0 +1,27 @@
+qtAddLibrary(QtConfiguration)
+
+!isEmpty(QTCONFIGURATION_BUILD_ROOT) {
+    INCLUDEPATH -= $$QMAKE_INCDIR_QT/QtConfiguration
+    QMAKE_INCDIR += $$QTCONFIGURATION_BUILD_ROOT/include $$QTCONFIGURATION_BUILD_ROOT/include/QtConfiguration
+
+    QTCONFIGURATION_BUILD_SUBDIR = src/configuration
+    win32 {
+        CONFIG(debug, debug|release) {
+            QTCONFIGURATION_BUILD_SUBDIR = $$QTCONFIGURATION_BUILD_SUBDIR/debug
+        } else {
+            QTCONFIGURATION_BUILD_SUBDIR = $$QTCONFIGURATION_BUILD_SUBDIR/release
+        }
+    }
+
+    QMAKE_LIBDIR += $$QTCONFIGURATION_BUILD_ROOT/$$QTCONFIGURATION_BUILD_SUBDIR
+}
+
+mac {
+    LIBS -= -framework QtConfiguration$${QT_LIBINFIX}
+
+   if(!debug_and_release|build_pass):CONFIG(debug, debug|release) {
+       LIBS += -lQtConfiguration$${QT_LIBINFIX}_debug
+   } else {
+       LIBS += -lQtConfiguration$${QT_LIBINFIX}
+   }
+}
