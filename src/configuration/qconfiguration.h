@@ -39,23 +39,22 @@ class QConfigurationPrivate;
 class Q_CONFIGURATION_EXPORT QConfiguration : public QObject
 {
     Q_OBJECT
-    Q_DECLARE_PRIVATE(QConfiguration)
+    Q_PROPERTY(QString category READ category WRITE setCategory FINAL)
 public:
-    explicit QConfiguration(const QString &schemaFileName);
+    explicit QConfiguration(QObject *parent = 0);
     ~QConfiguration();
 
-    QString schemaName() const;
+    QString category() const;
+    void setCategory(const QString &category);
 
-    QVariant value(const QString &key) const;
-    void setValue(const QString &key, const QVariant &value);
-
-signals:
-    void changed();
+protected:
+    void timerEvent(QTimerEvent *event);
 
 private:
-    Q_PRIVATE_SLOT(d_ptr, void _q_fileChanged(const QString &fileName))
-
-    QConfigurationPrivate *const d_ptr;
+    Q_DISABLE_COPY(QConfiguration)
+    Q_DECLARE_PRIVATE(QConfiguration)
+    QScopedPointer<QConfigurationPrivate> d_ptr;
+    Q_PRIVATE_SLOT(d_func(), void _q_propertyChanged())
 };
 
 QT_END_NAMESPACE

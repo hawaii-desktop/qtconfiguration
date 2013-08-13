@@ -28,7 +28,10 @@
 #ifndef QCONFIGURATION_P_H
 #define QCONFIGURATION_P_H
 
-#include "qconfigurationschema_p.h"
+#include <QtCore/QPointer>
+
+#include "qconfiguration.h"
+#include "qconfigurationbackend.h"
 
 //
 //  W A R N I N G
@@ -47,20 +50,24 @@ class QConfigurationPrivate
 {
     Q_DECLARE_PUBLIC(QConfiguration)
 public:
-    QConfigurationPrivate(QConfiguration *parent, const QString &schema);
-    ~QConfigurationPrivate();
+    QConfigurationPrivate();
 
-    QString schemaName;
-    QString fileName;
-    QSettings *storage;
-    QFileSystemWatcher *watcher;
-    QConfigurationSchema *schema;
+    QConfigurationBackend *instance() const;
 
-public slots:
-    void _q_fileChanged(const QString &fileName);
+    void init();
+    void reset();
 
-protected:
-    QConfiguration *const q_ptr;
+    void load();
+    void store();
+
+    void _q_propertyChanged();
+
+    QConfiguration *q_ptr;
+    int timerId;
+    bool initialized;
+    QString category;
+    mutable QPointer<QConfigurationBackend> backend;
+    QHash<const char *, QVariant> changedProperties;
 };
 
 QT_END_NAMESPACE

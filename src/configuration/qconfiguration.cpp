@@ -26,126 +26,186 @@
  ***************************************************************************/
 
 #include <QtCore/QDebug>
-#include <QtCore/QFileSystemWatcher>
-#include <QtCore/QSettings>
-#include <QtCore/QStandardPaths>
+#include <QtCore/QPointer>
+#include <QtCore/QHash>
+#include <QtCore/QMetaProperty>
+#include <QtCore/QTimerEvent>
 
 #include "qconfiguration.h"
 #include "qconfiguration_p.h"
-#include "qconfigurationschema_p.h"
+#include "qdconfconfigurationbackend.h"
 
 QT_BEGIN_NAMESPACE
+
+#define QCONFIGURATION_DEBUG 1
+
+static int configurationWriteDelay = 500;
 
 /*
  * QConfigurationPrivate
  */
 
-QConfigurationPrivate::QConfigurationPrivate(QConfiguration *parent, const QString &schemaFileName)
-    : schemaName(schemaFileName)
-    , q_ptr(parent)
+QConfigurationPrivate::QConfigurationPrivate()
+    : q_ptr(0)
+    , timerId(0)
+    , initialized(false)
+    , backend(0)
 {
-    // Determine the file path
-    QString pathName = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) +
-               QLatin1String("/hawaii/");
-    fileName = pathName + schemaName + ".ini";
-
-    // Create the storage
-    storage = new QSettings(fileName, QSettings::IniFormat);
-    watcher = new QFileSystemWatcher();
-    watcher->addPath(pathName);
-    watcher->addPath(fileName);
-
-    // Schema
-    schema = new QConfigurationSchema(schemaFileName);
 }
 
-QConfigurationPrivate::~QConfigurationPrivate()
+QConfigurationBackend *QConfigurationPrivate::instance() const
 {
-    delete watcher;
-    delete storage;
-    delete schema;
+    if (!backend) {
+        QConfiguration *q = const_cast<QConfiguration *>(q_func());
+        backend = new QDConfConfigurationBackend(q);
+
+        if (!category.isEmpty())
+            backend->setCategory(category);
+
+        if (initialized)
+            q->d_func()->load();
+    }
+
+    return backend;
 }
 
-void QConfigurationPrivate::_q_fileChanged(const QString &_fileName)
+void QConfigurationPrivate::init()
+{
+    if (!initialized) {
+        load();
+        initialized = true;
+    }
+}
+
+void QConfigurationPrivate::reset()
+{
+    if (initialized && backend && !changedProperties.isEmpty())
+        store();
+    delete backend;
+}
+
+void QConfigurationPrivate::load()
 {
     Q_Q(QConfiguration);
 
-    // Reload the file
-    delete storage;
-    storage = new QSettings(fileName, QSettings::IniFormat);
+    const QMetaObject *mo = q->metaObject();
+    const int offset = mo->propertyOffset();
+    const int count = mo->propertyCount();
 
-    // TODO: Detect only what keys have been changed and emit
-    // a changed(QString) signal for each of them
+    for (int i = offset; i < count; ++i) {
+        QMetaProperty property = mo->property(i);
 
-    emit q->changed();
+        const QString keyName = QLatin1String(property.name());
+        const QVariant previousValue = property.read(q);
+        const QVariant currentValue = instance()->value(keyName, previousValue);
+
+        if (!currentValue.isNull() &&
+                currentValue.canConvert(previousValue.type()) &&
+                previousValue != currentValue) {
+            property.write(q, currentValue);
+#ifdef QCONFIGURATION_DEBUG
+            qDebug() << "QConfiguration: load" << property.name() << "setting:" << currentValue
+                     << "default:" << previousValue;
+#endif
+        }
+
+        // ensure that a non-existent setting gets written
+        // even if the property wouldn't change later
+        if (!instance()->contains(keyName))
+            _q_propertyChanged();
+
+        // setup change notifications on first load
+        if (!initialized && property.hasNotifySignal()) {
+            static const int propertyChangedIndex = mo->indexOfSlot("_q_propertyChanged()");
+            QMetaObject::connect(q, property.notifySignalIndex(), q, propertyChangedIndex);
+        }
+    }
+}
+
+void QConfigurationPrivate::store()
+{
+    QHash<const char *, QVariant>::iterator it = changedProperties.begin();
+    while (it != changedProperties.end()) {
+        const QString keyName = QLatin1String(it.key());
+        instance()->setValue(keyName, it.value());
+#ifdef QCONFIGURATION_DEBUG
+        qDebug() << "QConfiguration: store" << it.key() << ":" << it.value();
+#endif
+        it = changedProperties.erase(it);
+    }
+}
+
+void QConfigurationPrivate::_q_propertyChanged()
+{
+    Q_Q(QConfiguration);
+
+    const QMetaObject *mo = q->metaObject();
+    const int offset = mo->propertyOffset();
+    const int count = mo->propertyCount();
+
+    for (int i = offset; i < count; ++i) {
+        const QMetaProperty &property = mo->property(i);
+        changedProperties.insert(property.name(), property.read(q));
+#ifdef QCONFIGURATION_DEBUG
+        qDebug() << "QConfiguration: cache" << property.name() << ":" << property.read(q);
+#endif
+    }
+
+    if (timerId != 0)
+        q->killTimer(timerId);
+    timerId = q->startTimer(configurationWriteDelay);
 }
 
 /*
  * QConfiguration
  */
 
-QConfiguration::QConfiguration(const QString &schemaName)
-    : QObject()
-    , d_ptr(new QConfigurationPrivate(this, schemaName))
+QConfiguration::QConfiguration(QObject *parent)
+    : QObject(parent)
+    , d_ptr(new QConfigurationPrivate)
 {
-    connect(d_ptr->watcher, SIGNAL(directoryChanged(QString)),
-            this, SLOT(_q_fileChanged(QString)));
-    connect(d_ptr->watcher, SIGNAL(fileChanged(QString)),
-            this, SLOT(_q_fileChanged(QString)));
+    Q_D(QConfiguration);
+    d->q_ptr = this;
 }
 
 QConfiguration::~QConfiguration()
 {
-    delete d_ptr;
+    Q_D(QConfiguration);
+    d->reset();
 }
 
-/*!
-    Returns the schema name.
-*/
-QString QConfiguration::schemaName() const
+QString QConfiguration::category() const
 {
     Q_D(const QConfiguration);
-
-    return d->schemaName;
+    return d->category;
 }
 
-/*!
-    Returns the value of a key.
-    \param key the key, with the complete path.
-*/
-QVariant QConfiguration::value(const QString &key) const
+void QConfiguration::setCategory(const QString &category)
 {
-    Q_D(const QConfiguration);
+    Q_D(QConfiguration);
+    if (d->category != category) {
+        d->reset();
+        d->category = category;
 
-    QConfigurationKey *rawKey = d->schema->lookupKey(key);
-    if (!rawKey) {
-        qWarning("Couldn't find \"%s\" key from \"%s\" settings schema",
-                 key.toLatin1().constData(), d->schemaName.toLatin1().constData());
-        return QVariant();
+        if (d->initialized)
+            d->load();
     }
-
-    QVariant defaultValue = rawKey->defaultValue.isValid() ? rawKey->defaultValue : QVariant();
-    return d->storage->value(key, defaultValue);;
 }
 
-/*!
-    Sets the value for the specified key.
-    \param key full path of the key.
-    \param value the value to set the key to.
-*/
-void QConfiguration::setValue(const QString &key, const QVariant &value)
+void QConfiguration::timerEvent(QTimerEvent *event)
 {
     Q_D(QConfiguration);
 
-    QConfigurationKey *rawKey = d->schema->lookupKey(key);
-    if (!rawKey) {
-        qWarning("Couldn't find \"%s\" key from \"%s\" settings schema",
-                 key.toLatin1().constData(), d->schemaName.toLatin1().constData());
-        return;
+    if (event->timerId() == d->timerId) {
+        if (d->changedProperties.isEmpty()) {
+            killTimer(d->timerId);
+            d->timerId = 0;
+        } else {
+            d->store();
+        }
     }
 
-    // Set the value
-    d->storage->setValue(key, value);
+    QObject::timerEvent(event);
 }
 
 QT_END_NAMESPACE
