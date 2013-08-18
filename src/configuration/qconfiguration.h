@@ -41,8 +41,10 @@ class Q_CONFIGURATION_EXPORT QConfiguration : public QObject
     Q_OBJECT
     Q_PROPERTY(QString category READ category WRITE setCategory FINAL)
 public:
-    explicit QConfiguration(QObject *parent = 0);
+    explicit QConfiguration(QObject *target, QObject *parent = 0);
     ~QConfiguration();
+
+    QObject *target() const;
 
     QString category() const;
     void setCategory(const QString &category);
@@ -56,8 +58,6 @@ private:
     QScopedPointer<QConfigurationPrivate> d_ptr;
     Q_PRIVATE_SLOT(d_func(), void _q_propertyChanged())
 };
-
-//Q_DECLARE_METATYPE(QConfiguration)
 
 QT_END_NAMESPACE
 

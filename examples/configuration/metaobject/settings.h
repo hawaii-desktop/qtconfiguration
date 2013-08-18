@@ -41,7 +41,7 @@
 #include <QtCore/QRect>
 #include <QtConfiguration/QConfiguration>
 
-class Settings : public QConfiguration
+class Settings : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QString foo READ foo WRITE setFoo NOTIFY fooChanged)
@@ -49,6 +49,7 @@ class Settings : public QConfiguration
     Q_PROPERTY(QRect rect READ rect WRITE setRect NOTIFY rectChanged)
 public:
     explicit Settings(QObject *parent = 0);
+    ~Settings();
 
     QString foo() const;
     void setFoo(const QString &value);
@@ -65,6 +66,7 @@ Q_SIGNALS:
     void rectChanged(const QRect &newValue);
 
 private:
+    QConfiguration *m_configuration;
     QString m_foo;
     int m_bar;
     QRect m_rect;

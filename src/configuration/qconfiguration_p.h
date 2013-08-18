@@ -63,6 +63,7 @@ public:
     void _q_propertyChanged();
 
     QConfiguration *q_ptr;
+    QObject *target;
     int timerId;
     bool initialized;
     QString category;

@@ -42,6 +42,12 @@ Settings::Settings(QObject *parent)
    , m_bar(42)
    , m_rect(QRect(10, 10, 42, 42))
 {
+    m_configuration = new QConfiguration(this);
+}
+
+Settings::~Settings()
+{
+    delete m_configuration;
 }
 
 QString Settings::foo() const

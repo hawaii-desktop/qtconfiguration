@@ -37,7 +37,7 @@
 
 QT_BEGIN_NAMESPACE
 
-#define QCONFIGURATION_DEBUG 1
+//#define QCONFIGURATION_DEBUG 1
 
 static int configurationWriteDelay = 500;
 
@@ -47,6 +47,7 @@ static int configurationWriteDelay = 500;
 
 QConfigurationPrivate::QConfigurationPrivate()
     : q_ptr(0)
+    , target(0)
     , timerId(0)
     , initialized(false)
     , backend(0)
@@ -82,30 +83,29 @@ void QConfigurationPrivate::reset()
     if (initialized && backend && !changedProperties.isEmpty())
         store();
     delete backend;
+    backend = 0;
 }
 
 void QConfigurationPrivate::load()
 {
     Q_Q(QConfiguration);
 
-    qDebug() << "**************" << q->staticMetaObject.propertyCount() << q->staticMetaObject.property(0).name();
-    const QMetaObject *mo = q->metaObject();
+    const QMetaObject *qmo = q->metaObject();
+    const QMetaObject *mo = target->metaObject();
     const int offset = mo->propertyOffset();
     const int count = mo->propertyCount();
-    qDebug() << "***" << mo << mo->className() << offset << count;
 
     for (int i = offset; i < count; ++i) {
         QMetaProperty property = mo->property(i);
-        qDebug() << "===" << i << property.name();
 
         const QString keyName = QLatin1String(property.name());
-        const QVariant previousValue = property.read(q);
+        const QVariant previousValue = property.read(target);
         const QVariant currentValue = instance()->value(keyName, previousValue);
 
         if (!currentValue.isNull() &&
                 currentValue.canConvert(previousValue.type()) &&
                 previousValue != currentValue) {
-            property.write(q, currentValue);
+            property.write(target, currentValue);
 #ifdef QCONFIGURATION_DEBUG
             qDebug() << "QConfiguration: load" << property.name() << "setting:" << currentValue
                      << "default:" << previousValue;
@@ -119,8 +119,8 @@ void QConfigurationPrivate::load()
 
         // setup change notifications on first load
         if (!initialized && property.hasNotifySignal()) {
-            static const int propertyChangedIndex = mo->indexOfSlot("_q_propertyChanged()");
-            QMetaObject::connect(q, property.notifySignalIndex(), q, propertyChangedIndex);
+            static const int propertyChangedIndex = qmo->indexOfSlot("_q_propertyChanged()");
+            QMetaObject::connect(target, property.notifySignalIndex(), q, propertyChangedIndex);
         }
     }
 }
@@ -142,15 +142,15 @@ void QConfigurationPrivate::_q_propertyChanged()
 {
     Q_Q(QConfiguration);
 
-    const QMetaObject *mo = q->metaObject();
+    const QMetaObject *mo = target->metaObject();
     const int offset = mo->propertyOffset();
     const int count = mo->propertyCount();
 
     for (int i = offset; i < count; ++i) {
         const QMetaProperty &property = mo->property(i);
-        changedProperties.insert(property.name(), property.read(q));
+        changedProperties.insert(property.name(), property.read(target));
 #ifdef QCONFIGURATION_DEBUG
-        qDebug() << "QConfiguration: cache" << property.name() << ":" << property.read(q);
+        qDebug() << "QConfiguration: cache" << property.name() << ":" << property.read(target);
 #endif
     }
 
@@ -163,13 +163,14 @@ void QConfigurationPrivate::_q_propertyChanged()
  * QConfiguration
  */
 
-QConfiguration::QConfiguration(QObject *parent)
+QConfiguration::QConfiguration(QObject *target, QObject *parent)
     : QObject(parent)
     , d_ptr(new QConfigurationPrivate)
 {
     Q_D(QConfiguration);
 
     d->q_ptr = this;
+    d->target = target;
     d->init();
 }
 
@@ -177,6 +178,12 @@ QConfiguration::~QConfiguration()
 {
     Q_D(QConfiguration);
     d->reset();
+}
+
+QObject *QConfiguration::target() const
+{
+    Q_D(const QConfiguration);
+    return d->target;
 }
 
 QString QConfiguration::category() const
