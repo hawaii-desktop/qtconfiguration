@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of QtConfiguration.
  *
- * Copyright (c) 2012-2013 Pier Luigi Fiorini
+ * Copyright (C) 2012-2013 Pier Luigi Fiorini
  *
  * Author(s):
  *    Pier Luigi Fiorini <pierluigi.fiorini@gmail.com>
@@ -25,40 +25,37 @@
  * $END_LICENSE$
  ***************************************************************************/
 
-#ifndef QCONFIGURATION_H
-#define QCONFIGURATION_H
+#ifndef QDCONFCONFIGURATIONBACKEND_H
+#define QDCONFCONFIGURATIONBACKEND_H
 
-#include <QtCore/QObject>
-
-#include <QtConfiguration/qconfigurationglobal.h>
+#include <QtConfiguration/qconfigurationbackend.h>
 
 QT_BEGIN_NAMESPACE
 
-class QConfigurationPrivate;
+class QDConfConfigurationBackendPrivate;
 
-class Q_CONFIGURATION_EXPORT QConfiguration : public QObject
+class Q_CONFIGURATION_EXPORT QDConfConfigurationBackend : public QConfigurationBackend
 {
     Q_OBJECT
-    Q_PROPERTY(QString category READ category WRITE setCategory FINAL)
 public:
-    explicit QConfiguration(QObject *parent = 0);
-    ~QConfiguration();
+    explicit QDConfConfigurationBackend(QObject *parent = 0);
+    ~QDConfConfigurationBackend();
 
-    QString category() const;
     void setCategory(const QString &category);
 
-protected:
-    void timerEvent(QTimerEvent *event);
+    bool contains(const QString &key) const;
+
+    QVariant value(const QString &key,
+                   const QVariant &defaultValue = QVariant()) const;
+    void setValue(const QString &key, const QVariant &value);
+
+    void notify(const QString &name, const QVariant &value);
 
 private:
-    Q_DISABLE_COPY(QConfiguration)
-    Q_DECLARE_PRIVATE(QConfiguration)
-    QScopedPointer<QConfigurationPrivate> d_ptr;
-    Q_PRIVATE_SLOT(d_func(), void _q_propertyChanged())
+    Q_DECLARE_PRIVATE(QDConfConfigurationBackend)
+    QDConfConfigurationBackendPrivate *d_ptr;
 };
-
-//Q_DECLARE_METATYPE(QConfiguration)
 
 QT_END_NAMESPACE
 
-#endif // QCONFIGURATION_H
+#endif // QDCONFCONFIGURATIONBACKEND_H

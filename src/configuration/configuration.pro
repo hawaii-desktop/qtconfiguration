@@ -1,4 +1,4 @@
-QT = core
+QT = core dbus
 
 #QMAKE_DOCS = $$PWD/doc/qtconfiguration.qdocconf
 include($$PWD/configuration-lib.pri)

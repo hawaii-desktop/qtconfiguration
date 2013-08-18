@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of QtConfiguration.
  *
- * Copyright (c) 2012-2013 Pier Luigi Fiorini
+ * Copyright (C) 2012-2013 Pier Luigi Fiorini
  *
  * Author(s):
  *    Pier Luigi Fiorini <pierluigi.fiorini@gmail.com>
@@ -25,40 +25,20 @@
  * $END_LICENSE$
  ***************************************************************************/
 
-#ifndef QCONFIGURATION_H
-#define QCONFIGURATION_H
+#ifndef QGVARIANTUTILS_H
+#define QGVARIANTUTILS_H
 
-#include <QtCore/QObject>
-
-#include <QtConfiguration/qconfigurationglobal.h>
+extern "C" {
+#include <glib.h>
+}
 
 QT_BEGIN_NAMESPACE
 
-class QConfigurationPrivate;
+#include <QtCore/QVariant>
 
-class Q_CONFIGURATION_EXPORT QConfiguration : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QString category READ category WRITE setCategory FINAL)
-public:
-    explicit QConfiguration(QObject *parent = 0);
-    ~QConfiguration();
-
-    QString category() const;
-    void setCategory(const QString &category);
-
-protected:
-    void timerEvent(QTimerEvent *event);
-
-private:
-    Q_DISABLE_COPY(QConfiguration)
-    Q_DECLARE_PRIVATE(QConfiguration)
-    QScopedPointer<QConfigurationPrivate> d_ptr;
-    Q_PRIVATE_SLOT(d_func(), void _q_propertyChanged())
-};
-
-//Q_DECLARE_METATYPE(QConfiguration)
+QVariant convertValue(GVariant *value);
+GVariant *convertVariant(const QVariant &variant);
 
 QT_END_NAMESPACE
 
-#endif // QCONFIGURATION_H
+#endif // QGVARIANTUTILS_H

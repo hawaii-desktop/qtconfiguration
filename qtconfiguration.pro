@@ -1,3 +1,7 @@
+load(configure)
+qtCompileTest(dconf)
+qtCompileTest(dconf-dbus-1)
+
 lessThan(QT_MAJOR_VERSION, 5) {
     TEMPLATE = subdirs
     #SUBDIRS = src examples tests
@@ -10,4 +14,11 @@ lessThan(QT_MAJOR_VERSION, 5) {
     }
 } else {
     load(qt_parts)
+}
+
+!config_dconf {
+    error("QtConfiguration requires dconf")
+}
+!config_dconf-dbus-1 {
+    error("QtConfiguration requires dconf-dbus-1")
 }

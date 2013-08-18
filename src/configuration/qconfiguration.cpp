@@ -88,12 +88,15 @@ void QConfigurationPrivate::load()
 {
     Q_Q(QConfiguration);
 
+    qDebug() << "**************" << q->staticMetaObject.propertyCount() << q->staticMetaObject.property(0).name();
     const QMetaObject *mo = q->metaObject();
     const int offset = mo->propertyOffset();
     const int count = mo->propertyCount();
+    qDebug() << "***" << mo << mo->className() << offset << count;
 
     for (int i = offset; i < count; ++i) {
         QMetaProperty property = mo->property(i);
+        qDebug() << "===" << i << property.name();
 
         const QString keyName = QLatin1String(property.name());
         const QVariant previousValue = property.read(q);
@@ -165,7 +168,9 @@ QConfiguration::QConfiguration(QObject *parent)
     , d_ptr(new QConfigurationPrivate)
 {
     Q_D(QConfiguration);
+
     d->q_ptr = this;
+    d->init();
 }
 
 QConfiguration::~QConfiguration()

@@ -1,3 +1,3 @@
 TEMPLATE = subdirs
 
-SUBDIRS = configuration imports
+SUBDIRS = configuration
