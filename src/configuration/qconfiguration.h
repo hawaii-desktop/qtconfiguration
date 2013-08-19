@@ -41,7 +41,8 @@ class Q_CONFIGURATION_EXPORT QConfiguration : public QObject
     Q_OBJECT
     Q_PROPERTY(QString category READ category WRITE setCategory FINAL)
 public:
-    explicit QConfiguration(QObject *target, QObject *parent = 0);
+    explicit QConfiguration(QObject *target, const QString &category, QObject *parent = 0);
+    QConfiguration(QObject *target, QObject *parent = 0);
     ~QConfiguration();
 
     QObject *target() const;

@@ -163,6 +163,18 @@ void QConfigurationPrivate::_q_propertyChanged()
  * QConfiguration
  */
 
+QConfiguration::QConfiguration(QObject *target, const QString &category, QObject *parent)
+    : QObject(parent)
+    , d_ptr(new QConfigurationPrivate)
+{
+    Q_D(QConfiguration);
+
+    d->q_ptr = this;
+    d->target = target;
+    d->category = category;
+    d->init();
+}
+
 QConfiguration::QConfiguration(QObject *target, QObject *parent)
     : QObject(parent)
     , d_ptr(new QConfigurationPrivate)
