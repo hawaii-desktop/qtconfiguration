@@ -130,17 +130,40 @@ QDConfConfigurationBackend::QDConfConfigurationBackend(QObject *parent)
     QString organization = QCoreApplication::organizationDomain().isEmpty()
             ? QCoreApplication::organizationName()
             : QCoreApplication::organizationDomain();
-    d->prefix = comify(organization);
-    if (d->prefix.isEmpty()) {
-        QString appName = QCoreApplication::applicationName();
+    QString domainName = comify(organization);
+    if (domainName.isEmpty())
+        // If domain name is empty use a hard-coded string
+        domainName = QLatin1String("qt-project.org");
+
+    // Convert domain name into java package name
+    QString javaPackageName;
+    int curPos = 0, nextDot;
+    while ((nextDot = domainName.indexOf(QLatin1Char('.'), curPos)) != -1) {
+        javaPackageName.prepend(domainName.mid(curPos, nextDot - curPos));
+        javaPackageName.prepend(QLatin1Char('.'));
+        curPos = nextDot + 1;
+    }
+    javaPackageName.prepend(domainName.mid(curPos));
+    javaPackageName = javaPackageName.toLower();
+    if (curPos == 0)
+        javaPackageName.prepend(QLatin1String("com."));
+
+    // Turn java package name into a path
+    d->prefix = QLatin1Char('/') + javaPackageName.replace(QLatin1Char('.'), QLatin1Char('/'));
+
+    // Aappend the application name if makes sense
+    QString appName = QString::null;
+    if (organization.isEmpty()) {
+        appName = QCoreApplication::applicationName();
         if (appName.isEmpty()) {
             QFileInfo fileInfo(QCoreApplication::applicationFilePath());
             appName = fileInfo.baseName();
+        } else {
+            appName = appName.toLower();
+            appName = appName.replace(QLatin1Char(' '), QLatin1Char('-'));
         }
-        d->prefix = QLatin1String("/org/qt-project/apps/") + appName;
     }
-
-    setCategory(QString::null);
+    setCategory(appName);
 }
 
 QDConfConfigurationBackend::~QDConfConfigurationBackend()
@@ -152,11 +175,21 @@ void QDConfConfigurationBackend::setCategory(const QString &category)
 {
     Q_D(QDConfConfigurationBackend);
 
-    if (!d->category.isEmpty())
-        dconf_dbus_client_unsubscribe(d->dbusClient, qdconf_notify, this);
+    QByteArray fullPath = d->prefix.toUtf8() + QByteArrayLiteral("/");
+    if (!category.isEmpty())
+        fullPath += category.toUtf8() + QByteArrayLiteral("/");
 
-    d->category = category;
-    QByteArray fullPath = d->prefix.toUtf8() + QByteArrayLiteral("/") + d->category.toUtf8();
+#if 0
+    if (d->category != QString::fromUtf8(fullPath))
+        dconf_dbus_client_unsubscribe(d->dbusClient, qdconf_notify, this);
+#endif
+
+    d->category = QString::fromUtf8(fullPath);
+
+#ifdef QDCONF_DEBUG
+    qDebug() << "QDConfConfigurationBackend: setCategory" << fullPath;
+#endif
+
     dconf_dbus_client_subscribe(d->dbusClient, fullPath.constData(),
                                 qdconf_notify, this);
 }
@@ -180,7 +213,7 @@ QVariant QDConfConfigurationBackend::value(const QString &key, const QVariant &d
 {
     Q_D(const QDConfConfigurationBackend);
 
-    QByteArray path = d->prefix.toUtf8() + QByteArrayLiteral("/") + key.toUtf8();
+    QByteArray path = d->category.toUtf8() + key.toUtf8();
 #ifdef QDCONF_DEBUG
     qDebug() << "QDConfConfigurationBackend: value" << path << "default:" << defaultValue;
 #endif
@@ -197,7 +230,7 @@ void QDConfConfigurationBackend::setValue(const QString &key, const QVariant &va
 
     GError *error = 0;
 
-    QByteArray path = d->prefix.toUtf8() + QByteArrayLiteral("/") + key.toUtf8();
+    QByteArray path = d->category.toUtf8() + key.toUtf8();
 #ifdef QDCONF_DEBUG
     qDebug() << "QDConfConfigurationBackend: setValue" << path << "value:" << value;
 #endif
