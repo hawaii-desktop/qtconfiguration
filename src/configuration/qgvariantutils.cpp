@@ -27,6 +27,7 @@
 
 #include <QtCore/QRect>
 #include <QtCore/QStringList>
+#include <QtCore/QUrl>
 
 #include "qgvariantutils.h"
 
@@ -56,8 +57,27 @@ QVariant convertValue(GVariant *value)
         return QVariant((quint64)g_variant_get_uint64(value));
     case G_VARIANT_CLASS_DOUBLE:
         return QVariant((double)g_variant_get_double(value));
-    case G_VARIANT_CLASS_STRING:
-        return QVariant(QString::fromUtf8(g_variant_get_string(value, NULL)));
+    case G_VARIANT_CLASS_STRING: {
+        QString str = QString::fromUtf8(g_variant_get_string(value, NULL));
+        if (str.startsWith(QLatin1Char('@')) && str.endsWith(QLatin1Char(')'))) {
+            if (str.startsWith(QLatin1String("@Url(")))
+                return QVariant(QUrl::fromUserInput(str.mid(5, str.size() - 6)));
+            else if (str.startsWith(QLatin1String("@Variant("))) {
+#ifndef QT_NO_DATASTREAM
+                QByteArray byteArray(str.toUtf8().mid(9));
+                QDataStream stream(&byteArray, QIODevice::ReadOnly);
+                stream.setVersion(QDataStream::Qt_4_0);
+
+                QVariant result;
+                stream >> result;
+                return result;
+#else
+                Q_ASSERT("QConfiguration: cannot load custom type without QDataStream support");
+#endif
+            }
+        }
+        return QVariant(str);
+    }
     case G_VARIANT_CLASS_ARRAY:
         if (g_variant_is_of_type(value, G_VARIANT_TYPE_STRING_ARRAY)) {
             GVariantIter iter;
@@ -147,6 +167,10 @@ GVariant *convertVariant(const QVariant &variant)
         QString value = variant.toString();
         return g_variant_new_string(value.toUtf8().constData());
     }
+    case QMetaType::QUrl: {
+        QString value = QLatin1String("@Url(") + variant.toUrl().toString() + QLatin1String(")");
+        return g_variant_new_string(value.toUtf8().constData());
+    }
     case QMetaType::QRect: {
         QRect value = variant.toRect();
         GVariantBuilder *builder = g_variant_builder_new(G_VARIANT_TYPE("ai"));
@@ -158,8 +182,21 @@ GVariant *convertVariant(const QVariant &variant)
         g_variant_builder_unref(builder);
         return result;
     }
-    default:
-        break;
+    default: {
+#ifndef QT_NO_DATASTREAM
+        QByteArray byteArray;
+        QDataStream stream(&byteArray, QIODevice::WriteOnly);
+        stream.setVersion(QDataStream::Qt_4_0);
+        stream << variant;
+
+        QString value = QLatin1String("@Variant(");
+        value += QString::fromUtf8(byteArray.constData());
+        value += QLatin1String(")");
+        return g_variant_new_string(value.toUtf8().constData());
+#else
+        Q_ASSERT("QConfiguration: cannot save custom types without QDataStream support");
+#endif
+    }
     }
 
     return 0;
