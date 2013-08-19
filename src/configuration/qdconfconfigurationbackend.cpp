@@ -247,13 +247,17 @@ void QDConfConfigurationBackend::setValue(const QString &key, const QVariant &va
 
 void QDConfConfigurationBackend::notify(const QString &name, const QVariant &value)
 {
-#ifdef QDCONF_DEBUG
-    qDebug() << "QDConfConfigurationBackend: notify" << name << "value:" << value;
-#endif
+    Q_D(QDConfConfigurationBackend);
 
     QConfiguration *configuration = qobject_cast<QConfiguration *>(parent());
-    if (configuration)
-        configuration->target()->setProperty(name.toUtf8().constData(), value);
+    if (configuration) {
+#ifdef QDCONF_DEBUG
+        qDebug() << "QDConfConfigurationBackend: notify" << name << "value:" << value;
+#endif
+        QString propertyName = name;
+        propertyName = propertyName.replace(d->category, QLatin1String(""));
+        configuration->target()->setProperty(propertyName.toUtf8().constData(), value);
+    }
 }
 
 #include "moc_qdconfconfigurationbackend.cpp"
