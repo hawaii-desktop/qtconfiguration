@@ -39,7 +39,7 @@ extern "C" {
 #include "qdconfconfigurationbackend.h"
 #include "qgvariantutils.h"
 
-#define QDCONF_DEBUG 1
+//#define QDCONF_DEBUG 1
 
 static QString comify(const QString &organization)
 {
@@ -111,8 +111,10 @@ public:
     {
         if (client)
             g_object_unref(client);
+#if 0
         if (dbusClient)
             dconf_dbus_client_unref(dbusClient);
+#endif
     }
 
     DConfClient *client;
