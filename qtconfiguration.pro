@@ -1,6 +1,5 @@
 load(configure)
 qtCompileTest(dconf)
-qtCompileTest(dconf-dbus-1)
 
 lessThan(QT_MAJOR_VERSION, 5) {
     TEMPLATE = subdirs
@@ -18,7 +17,4 @@ lessThan(QT_MAJOR_VERSION, 5) {
 
 !config_dconf {
     error("QtConfiguration requires dconf")
-}
-!config_dconf-dbus-1 {
-    error("QtConfiguration requires dconf-dbus-1")
 }

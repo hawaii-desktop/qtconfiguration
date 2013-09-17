@@ -27,13 +27,12 @@
 
 extern "C" {
 #include <dconf/client/dconf-client.h>
-#include <dconf-dbus-1/dconf-dbus-1.h>
+#include <dconf/common/dconf-paths.h>
 }
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QFileInfo>
-#include <QtDBus/QDBusConnection>
 
 #include "qconfiguration.h"
 #include "qdconfconfigurationbackend.h"
@@ -85,47 +84,89 @@ static QString comify(const QString &organization)
     return domain;
 }
 
-static void qdconf_notify(DConfDBusClient *client, const char *key, void *user_data)
-{
-    QDConfConfigurationBackend *self = (QDConfConfigurationBackend *)user_data;
-
-    GVariant *variant = dconf_dbus_client_read(client, key);
-    QVariant value = convertValue(variant);
-
-    self->notify(QString::fromUtf8(key), value);
-}
-
 class QDConfConfigurationBackendPrivate
 {
+    Q_DECLARE_PUBLIC(QDConfConfigurationBackend)
 public:
-    QDConfConfigurationBackendPrivate()
+    QDConfConfigurationBackendPrivate(QDConfConfigurationBackend *parent)
+        : q_ptr(parent)
     {
         client = dconf_client_new();
+        g_object_ref(client);
 
-        DBusConnection *sessionBus = (DBusConnection *)QDBusConnection::sessionBus().internalPointer();
-        DBusConnection *systemBus = (DBusConnection *)QDBusConnection::systemBus().internalPointer();
-        dbusClient = dconf_dbus_client_new(NULL, sessionBus, systemBus);
+        g_signal_connect(G_OBJECT(client), "changed", G_CALLBACK(changeCallback), this);
     }
 
     ~QDConfConfigurationBackendPrivate()
     {
+        if (!category.isEmpty())
+            dconf_client_unwatch_fast(client, qPrintable(category));
         if (client)
             g_object_unref(client);
-#if 0
-        if (dbusClient)
-            dconf_dbus_client_unref(dbusClient);
-#endif
+    }
+
+    static void changeCallback(DConfClient *, char *prefix_, char **changes, char *tag, void *userData)
+    {
+        Q_UNUSED(tag);
+
+        QDConfConfigurationBackendPrivate *self =
+                static_cast<QDConfConfigurationBackendPrivate *>(userData);
+        if (!self || !prefix_ || !changes)
+            return;
+
+        if (strcmp(changes[0], "") == 0) {
+            if (dconf_is_key(prefix_, NULL)) {
+                // If a single key has changed then prefix will be equal
+                // to the key and changes will contain a single empty item
+                QString key = QString::fromUtf8(prefix_).replace(self->category, QStringLiteral(""));
+                GVariant *gvalue = dconf_client_read(self->client, prefix_);
+                if (gvalue) {
+                    QVariant value = convertValue(gvalue);
+                    self->q_ptr->notify(key, value);
+                }
+            } else if (dconf_is_dir(prefix_, NULL)) {
+                // If any key under a dir has changed then prefix will be equal to
+                // the dir and changes will contain a single empty item
+                gint length = 0;
+                gchar **array = dconf_client_list(self->client, prefix_, &length);
+                for (int i = 0; i < length; ++i) {
+                    QString key = QString::fromUtf8(prefix_) + QString::fromUtf8(array[i]);
+                    GVariant *gvalue = dconf_client_read(self->client, qPrintable(key));
+                    if (gvalue) {
+                        QVariant value = convertValue(gvalue);
+                        self->q_ptr->notify(key, value);
+                    }
+                }
+                g_strfreev(array);
+            }
+        } else {
+            // If more than one change is being reported then changes will have more than one item
+            while (changes) {
+                QString tmpKey = QString::fromUtf8(prefix_) + QString::fromUtf8(changes[0]);
+                QString key = tmpKey.replace(self->category, QStringLiteral(""));
+
+                GVariant *gvalue = dconf_client_read(self->client, qPrintable(key));
+                if (gvalue) {
+                    QVariant value = convertValue(gvalue);
+                    self->q_ptr->notify(key, value);
+                }
+
+                ++changes;
+            }
+        }
     }
 
     DConfClient *client;
-    DConfDBusClient *dbusClient;
     QString prefix;
     QString category;
+
+protected:
+    QDConfConfigurationBackend *q_ptr;
 };
 
 QDConfConfigurationBackend::QDConfConfigurationBackend(QObject *parent)
     : QConfigurationBackend(parent)
-    , d_ptr(new QDConfConfigurationBackendPrivate)
+    , d_ptr(new QDConfConfigurationBackendPrivate(this))
 {
     Q_D(QDConfConfigurationBackend);
 
@@ -181,19 +222,20 @@ void QDConfConfigurationBackend::setCategory(const QString &category)
     if (!category.isEmpty())
         fullPath += category.toUtf8() + QByteArrayLiteral("/");
 
-#if 0
-    if (d->category != QString::fromUtf8(fullPath))
-        dconf_dbus_client_unsubscribe(d->dbusClient, qdconf_notify, this);
-#endif
+    if (d->category != QString::fromUtf8(fullPath)) {
+        // Unsubscribe the old path if it was really changed
+        dconf_client_unwatch_fast(d->client, fullPath.constData());
 
-    d->category = QString::fromUtf8(fullPath);
+        // Watch the new path
+        dconf_client_watch_fast(d->client, fullPath.constData());
+
+        // Save the new category
+        d->category = QString::fromUtf8(fullPath);
 
 #ifdef QDCONF_DEBUG
-    qDebug() << "QDConfConfigurationBackend: setCategory" << fullPath;
+        qDebug() << "QDConfConfigurationBackend: setCategory" << fullPath;
 #endif
-
-    dconf_dbus_client_subscribe(d->dbusClient, fullPath.constData(),
-                                qdconf_notify, this);
+    }
 }
 
 bool QDConfConfigurationBackend::contains(const QString &key) const
