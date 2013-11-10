@@ -39,7 +39,7 @@
 #ifndef QDCONFCONFIGURATIONBACKEND_H
 #define QDCONFCONFIGURATIONBACKEND_H
 
-#include <QtConfiguration/qconfigurationbackend.h>
+#include <QtConfiguration/QConfigurationBackend>
 
 QT_BEGIN_NAMESPACE
 
