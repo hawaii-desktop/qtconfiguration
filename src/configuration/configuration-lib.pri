@@ -2,9 +2,9 @@ INCLUDEPATH += $$PWD
 
 !contains(QT_CONFIG, no-pkg-config) {
     CONFIG += link_pkgconfig
-    PKGCONFIG += dconf dbus-1 dconf-dbus-1
+    PKGCONFIG += dconf
 } else {
-    LIBS += -ldconf -lgio-2.0 -lgobject-2.0 -ldconf-dbus-1 -ldbus-1 -lglib-2.0
+    LIBS += -ldconf -lgio-2.0 -lgobject-2.0 -lglib-2.0
 }
 
 PUBLIC_HEADERS += \

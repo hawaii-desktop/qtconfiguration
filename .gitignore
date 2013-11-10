@@ -20,5 +20,4 @@ Makefile.Debug
 Makefile.Release
 config.log
 config.tests/dconf/dconf
-config.tests/dconf-dbus-1/dconf-dbus-1
 examples/configuration/metaobject/metaobject
