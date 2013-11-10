@@ -34,6 +34,7 @@ QConfigurationBackend::QConfigurationBackend(QObject *parent)
 
 void QConfigurationBackend::setCategory(const QString &category)
 {
+    Q_UNUSED(category);
 }
 
 bool QConfigurationBackend::contains(const QString &key) const
