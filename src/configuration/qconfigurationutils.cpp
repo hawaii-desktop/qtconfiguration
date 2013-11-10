@@ -1,7 +1,6 @@
 /****************************************************************************
 **
 ** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
-** Copyright (C) 2013 Pier Luigi Fiorini.
 ** Contact: http://www.qt-project.org/legal
 **
 ** $QT_BEGIN_LICENSE:LGPL$
@@ -38,41 +37,54 @@
 **
 ****************************************************************************/
 
-#ifndef QCONFIGURATION_H
-#define QCONFIGURATION_H
+#include <QtCore/qglobal.h>
 
-#include <QtCore/QObject>
-
-#include <QtConfiguration/qconfigurationglobal.h>
+#include "qconfigurationutils.h"
 
 QT_BEGIN_NAMESPACE
 
-class QConfigurationPrivate;
-
-class Q_CONFIGURATION_EXPORT QConfiguration : public QObject
+QString comify(const QString &organization)
 {
-    Q_OBJECT
-    Q_PROPERTY(QString category READ category WRITE setCategory FINAL)
-public:
-    explicit QConfiguration(QObject *target, const QString &category, QObject *parent = 0);
-    QConfiguration(QObject *target, QObject *parent = 0);
-    ~QConfiguration();
+    for (int i = organization.size() - 1; i >= 0; --i) {
+        QChar ch = organization.at(i);
+        if (ch == QLatin1Char('.') || ch == QChar(0x3002) || ch == QChar(0xff0e)
+                || ch == QChar(0xff61)) {
+            QString suffix = organization.mid(i + 1).toLower();
+            if (suffix.size() == 2 || suffix == QLatin1String("com")
+                    || suffix == QLatin1String("org") || suffix == QLatin1String("net")
+                    || suffix == QLatin1String("edu") || suffix == QLatin1String("gov")
+                    || suffix == QLatin1String("mil") || suffix == QLatin1String("biz")
+                    || suffix == QLatin1String("info") || suffix == QLatin1String("name")
+                    || suffix == QLatin1String("pro") || suffix == QLatin1String("aero")
+                    || suffix == QLatin1String("coop") || suffix == QLatin1String("museum")) {
+                QString result = organization;
+                result.replace(QLatin1Char('/'), QLatin1Char(' '));
+                return result;
+            }
+            break;
+        }
+        int uc = ch.unicode();
+        if ((uc < 'a' || uc > 'z') && (uc < 'A' || uc > 'Z'))
+            break;
+    }
 
-    QObject *target() const;
-
-    QString category() const;
-    void setCategory(const QString &category);
-
-protected:
-    void timerEvent(QTimerEvent *event);
-
-private:
-    Q_DISABLE_COPY(QConfiguration)
-    Q_DECLARE_PRIVATE(QConfiguration)
-    QScopedPointer<QConfigurationPrivate> d_ptr;
-    Q_PRIVATE_SLOT(d_func(), void _q_propertyChanged())
-};
+    QString domain;
+    for (int i = 0; i < organization.size(); ++i) {
+        QChar ch = organization.at(i);
+        int uc = ch.unicode();
+        if ((uc >= 'a' && uc <= 'z') || (uc >= '0' && uc <= '9')) {
+            domain += ch;
+        } else if (uc >= 'A' && uc <= 'Z') {
+            domain += ch.toLower();
+        } else {
+            domain += QLatin1Char(' ');
+        }
+    }
+    domain = domain.simplified();
+    domain.replace(QLatin1Char(' '), QLatin1Char('-'));
+    if (!domain.isEmpty())
+        domain.append(QLatin1String(".com"));
+    return domain;
+}
 
 QT_END_NAMESPACE
-
-#endif // QCONFIGURATION_H

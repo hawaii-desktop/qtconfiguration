@@ -1,6 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2013 Pier Luigi Fiorini.
+** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
@@ -36,20 +37,15 @@
 **
 ****************************************************************************/
 
-#ifndef QGVARIANTUTILS_H
-#define QGVARIANTUTILS_H
-
-extern "C" {
-#include <glib.h>
-}
+#ifndef QCONFIGURATIONUTILS_H
+#define QCONFIGURATIONUTILS_H
 
 QT_BEGIN_NAMESPACE
 
-#include <QtCore/QVariant>
+#include <QtCore/QString>
 
-QVariant convertValue(GVariant *value);
-GVariant *convertVariant(const QVariant &variant);
+QString comify(const QString &organization);
 
 QT_END_NAMESPACE
 
-#endif // QGVARIANTUTILS_H
+#endif // QCONFIGURATIONUTILS_H

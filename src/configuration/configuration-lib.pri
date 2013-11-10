@@ -15,12 +15,14 @@ PUBLIC_HEADERS += \
 PRIVATE_HEADERS += \
     $$PWD/qconfiguration_p.h \
     $$PWD/qdconfconfigurationbackend.h \
-    $$PWD/qgvarianutils.h
+    $$PWD/qgvarianutils.h \
+    $$PWD/qconfigurationutils.h
 
 SOURCES += \
     $$PWD/qconfiguration.cpp \
     $$PWD/qconfigurationbackend.cpp \
     $$PWD/qdconfconfigurationbackend.cpp \
-    $$PWD/qgvariantutils.cpp
+    $$PWD/qgvariantutils.cpp \
+    $$PWD/qconfigurationutils.cpp
 
 HEADERS += $$PUBLIC_HEADERS $$PRIVATE_HEADERS
