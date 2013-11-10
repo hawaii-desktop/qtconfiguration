@@ -1,0 +1,33 @@
+# QtConfigurationConfig.cmake provides information about the installed QtConfiguration library.
+# It can be used directly from CMake via find_package(QtConfiguration NO_MODULE)
+#
+# The following CMake variables are provided:
+#   QtConfiguration_VERSION_MAJOR - the major version number of QtConfiguration
+#   QtConfiguration_VERSION_MINOR - the minor version number of QtConfiguration
+#   QtConfiguration_VERSION_PATCH - the patch version number of QtConfiguration
+#   QtConfiguration_INCLUDE_DIRS  - the include directories to use
+#   QtConfiguration_LIBRARIES     - the libraries to link against
+#
+# Additionally, the following imported library targets are created, which may be used directly
+# with target_link_libraries():
+#   QtConfiguration::qtaccountsservice - the QtConfiguration library
+
+@PACKAGE_INIT@
+
+# Any changes in this ".cmake" file will be overwritten by CMake, the source is the ".cmake.in" file.
+
+set(QtConfiguration_VERSION_MAJOR "@QT_CONFIGURATION_VERSION_MAJOR@")
+set(QtConfiguration_VERSION_MINOR "@QT_CONFIGURATION_VERSION_MINOR@")
+set(QtConfiguration_VERSION_PATCH "@QT_CONFIGURATION_VERSION_PATCH@")
+
+set(QtConfiguration_INSTALL_PREFIX "@PACKAGE_CMAKE_INSTALL_PREFIX@")
+set_and_check(QtConfiguration_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+
+if(NOT TARGET QtConfiguration)
+  include("${CMAKE_CURRENT_LIST_DIR}/QtConfigurationTargets.cmake")
+endif()
+
+# "public" variables:
+
+set(QtConfiguration_INCLUDE_DIRS ${QtConfiguration_INCLUDE_DIR} ${QtConfiguration_INCLUDE_DIR}/QtConfiguration)
+set(QtConfiguration_LIBRARIES QtConfiguration::qtconfiguration)
