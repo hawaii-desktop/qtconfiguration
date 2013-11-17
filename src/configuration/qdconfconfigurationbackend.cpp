@@ -62,21 +62,22 @@ public:
         client = dconf_client_new();
         g_object_ref(client);
 
-        g_signal_connect(G_OBJECT(client), "changed", G_CALLBACK(changeCallback), this);
+        g_signal_connect(G_OBJECT(client), "changed",
+                         G_CALLBACK(&changeCallback), (gpointer)this);
     }
 
     ~QDConfConfigurationBackendPrivate()
     {
         if (!category.isEmpty())
             dconf_client_unwatch_fast(client, qPrintable(category));
-        if (client)
+        if (client) {
+            g_signal_handlers_disconnect_by_data(G_OBJECT(client), (gpointer)this);
             g_object_unref(client);
+        }
     }
 
-    static void changeCallback(DConfClient *, char *prefix_, char **changes, char *tag, void *userData)
+    static void changeCallback(DConfClient *, char *prefix_, char **changes, char *, gpointer userData)
     {
-        Q_UNUSED(tag);
-
         QDConfConfigurationBackendPrivate *self =
                 static_cast<QDConfConfigurationBackendPrivate *>(userData);
         if (!self || !prefix_ || !changes)
