@@ -1,7 +1,7 @@
 /****************************************************************************
  * This file is part of QtConfiguration.
  *
- * Copyright (c) 2012-2013 Pier Luigi Fiorini
+ * Copyright (c) 2012-2014 Pier Luigi Fiorini
  *
  * Author(s):
  *    Pier Luigi Fiorini <pierluigi.fiorini@gmail.com>

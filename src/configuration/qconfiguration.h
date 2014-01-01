@@ -1,7 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2013 Digia Plc and/or its subsidiary(-ies).
-** Copyright (C) 2013 Pier Luigi Fiorini.
+** Copyright (C) 2013-2014 Digia Plc and/or its subsidiary(-ies).
+** Copyright (C) 2013-2014 Pier Luigi Fiorini.
 ** Contact: http://www.qt-project.org/legal
 **
 ** $QT_BEGIN_LICENSE:LGPL$

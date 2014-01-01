@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (c) 2013 Pier Luigi Fiorini.
+** Copyright (c) 2013-2014 Pier Luigi Fiorini.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
 ** Commercial License Usage
