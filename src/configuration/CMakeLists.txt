@@ -10,11 +10,13 @@ set(SOURCES
     qconfigurationutils.cpp
     qdconfconfigurationbackend.cpp
     qgvariantutils.cpp
+    qstaticconfiguration.cpp
 )
 
 set(HEADERS
     qconfigurationbackend.h
     qconfiguration.h
+    qstaticconfiguration.h
 )
 
 add_library(qtconfiguration SHARED ${SOURCES})
