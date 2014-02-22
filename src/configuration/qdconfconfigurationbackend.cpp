@@ -49,6 +49,7 @@ extern "C" {
 #include "qdconfconfigurationbackend.h"
 #include "qgvariantutils.h"
 #include "qconfigurationutils.h"
+#include "qstaticconfiguration.h"
 
 //#define QDCONF_DEBUG 1
 
@@ -128,6 +129,7 @@ public:
     DConfClient *client;
     QString prefix;
     QString category;
+    QString confCategory;
 
 protected:
     QDConfConfigurationBackend *q_ptr;
@@ -183,6 +185,12 @@ QDConfConfigurationBackend::~QDConfConfigurationBackend()
     delete d_ptr;
 }
 
+QString QDConfConfigurationBackend::category() const
+{
+    Q_D(const QDConfConfigurationBackend);
+    return d->confCategory;
+}
+
 void QDConfConfigurationBackend::setCategory(const QString &category)
 {
     Q_D(QDConfConfigurationBackend);
@@ -200,6 +208,7 @@ void QDConfConfigurationBackend::setCategory(const QString &category)
 
         // Save the new category
         d->category = QString::fromUtf8(fullPath);
+        d->confCategory = category;
 
 #ifdef QDCONF_DEBUG
         qDebug() << "QDConfConfigurationBackend: setCategory" << fullPath;
@@ -270,6 +279,21 @@ void QDConfConfigurationBackend::notify(const QString &name, const QVariant &val
         QString propertyName = name;
         propertyName = propertyName.replace(d->category, QLatin1String(""));
         configuration->target()->setProperty(propertyName.toUtf8().constData(), value);
+        return;
+    }
+
+    QStaticConfiguration *staticConf = qobject_cast<QStaticConfiguration *>(parent());
+    if (staticConf) {
+#ifdef QDCONF_DEBUG
+        qDebug() << "QDConfConfigurationBackend: notify" << name << "value:" << value;
+#endif
+        QString propertyName = name;
+        propertyName = propertyName.replace(d->category, QLatin1String(""));
+
+        QMetaObject::invokeMethod(staticConf, "valueChanged",
+                                  Qt::QueuedConnection,
+                                  Q_ARG(const QString, propertyName),
+                                  Q_ARG(const QVariant, value));
     }
 }
 

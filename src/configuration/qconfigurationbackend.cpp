@@ -43,6 +43,11 @@ QConfigurationBackend::QConfigurationBackend(QObject *parent)
 {
 }
 
+QString QConfigurationBackend::category() const
+{
+    return QString();
+}
+
 void QConfigurationBackend::setCategory(const QString &category)
 {
     Q_UNUSED(category);

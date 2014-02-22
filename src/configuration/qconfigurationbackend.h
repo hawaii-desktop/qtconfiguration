@@ -52,6 +52,7 @@ class Q_CONFIGURATION_EXPORT QConfigurationBackend : public QObject
 public:
     explicit QConfigurationBackend(QObject *parent = 0);
 
+    virtual QString category() const;
     virtual void setCategory(const QString &category);
 
     virtual bool contains(const QString &key) const;

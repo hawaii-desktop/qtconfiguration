@@ -52,6 +52,7 @@ public:
     explicit QDConfConfigurationBackend(QObject *parent = 0);
     ~QDConfConfigurationBackend();
 
+    QString category() const;
     void setCategory(const QString &category);
 
     bool contains(const QString &key) const;
