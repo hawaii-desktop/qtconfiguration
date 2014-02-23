@@ -244,6 +244,7 @@ public:
     void store();
 
     void _q_propertyChanged();
+    void _q_valueChanged(const QString &key, const QVariant &value);
 
     QQmlConfiguration *q_ptr;
     int timerId;
@@ -267,6 +268,9 @@ QStaticConfiguration *QQmlConfigurationPrivate::instance() const
             settings->setCategory(category);
         if (initialized)
             q->d_func()->load();
+        else
+            q->connect(settings, SIGNAL(valueChanged(QString,QVariant)),
+                       q, SLOT(_q_valueChanged(QString,QVariant)));
     }
     return settings;
 }
@@ -347,6 +351,30 @@ void QQmlConfigurationPrivate::_q_propertyChanged()
     if (timerId != 0)
         q->killTimer(timerId);
     timerId = q->startTimer(settingsWriteDelay);
+}
+
+void QQmlConfigurationPrivate::_q_valueChanged(const QString &key, const QVariant &value)
+{
+    Q_Q(QQmlConfiguration);
+
+    const QMetaObject *mo = q->metaObject();
+    const int offset = mo->propertyOffset();
+    const int count = mo->propertyCount();
+    for (int i = offset; i < count; ++i) {
+        QMetaProperty property = mo->property(i);
+
+        if (property.name() != key)
+            continue;
+
+        const QVariant currentValue = property.read(q);
+
+        if (currentValue.isValid() && currentValue != value) {
+#ifdef SETTINGS_DEBUG
+            qDebug() << "QQmlConfiguration: value changed" << property.name() << "old:" << currentValue << "new:" << value;
+#endif
+            property.write(q, value);
+        }
+    }
 }
 
 QQmlConfiguration::QQmlConfiguration(QObject *parent)

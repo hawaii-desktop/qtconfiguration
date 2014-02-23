@@ -75,6 +75,7 @@ private:
     Q_DECLARE_PRIVATE(QQmlConfiguration)
     QScopedPointer<QQmlConfigurationPrivate> d_ptr;
     Q_PRIVATE_SLOT(d_func(), void _q_propertyChanged())
+    Q_PRIVATE_SLOT(d_func(), void _q_valueChanged(const QString &key, const QVariant &value))
 };
 
 QT_END_NAMESPACE
