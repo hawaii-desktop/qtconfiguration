@@ -1,6 +1,7 @@
 set(PUBLIC_CLASSES
     QConfiguration
     QConfigurationBackend
+    QStaticConfiguration
 )
 
 # Create the portable headers
