@@ -287,12 +287,9 @@ void QDConfConfigurationBackend::notify(const QString &name, const QVariant &val
 #ifdef QDCONF_DEBUG
         qDebug() << "QDConfConfigurationBackend: notify" << name << "value:" << value;
 #endif
-        QString propertyName = name;
-        propertyName = propertyName.replace(d->category, QLatin1String(""));
-
         QMetaObject::invokeMethod(staticConf, "valueChanged",
                                   Qt::QueuedConnection,
-                                  Q_ARG(const QString, propertyName),
+                                  Q_ARG(const QString, name),
                                   Q_ARG(const QVariant, value));
     }
 }
