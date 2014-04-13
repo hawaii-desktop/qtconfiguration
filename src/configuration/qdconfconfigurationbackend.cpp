@@ -267,6 +267,41 @@ void QDConfConfigurationBackend::setValue(const QString &key, const QVariant &va
     }
 }
 
+bool QDConfConfigurationBackend::removeKey(const QString &key)
+{
+    Q_D(QDConfConfigurationBackend);
+
+    GError *error = 0;
+
+    QByteArray path = d->category.toUtf8() + key.toUtf8();
+#ifdef QDCONF_DEBUG
+    qDebug() << "QDConfConfigurationBackend: removeKey" << path;
+#endif
+
+    if (!dconf_is_key(path.constData(), &error)) {
+        qWarning() << "Path" << path << "is not a key, cannot remove";
+        return false;
+    }
+
+    if (error) {
+        qWarning() << "An error occurred retrieving information about" << path
+                   << "from dconf: " << error->message;
+        g_error_free(error);
+        return false;
+    }
+
+    dconf_client_write_sync(d->client, path.constData(), NULL, NULL, NULL, &error);
+
+    if (error) {
+        qWarning() << "An error occurred removing" << path
+                   << "from dconf: " << error->message;
+        g_error_free(error);
+        return false;
+    }
+
+    return true;
+}
+
 void QDConfConfigurationBackend::notify(const QString &name, const QVariant &value)
 {
     Q_D(QDConfConfigurationBackend);

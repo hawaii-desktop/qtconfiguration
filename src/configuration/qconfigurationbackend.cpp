@@ -71,4 +71,10 @@ void QConfigurationBackend::setValue(const QString &key, const QVariant &value)
     Q_UNUSED(value);
 }
 
+bool QConfigurationBackend::removeKey(const QString &key)
+{
+    Q_UNUSED(key);
+    return false;
+}
+
 #include "moc_qconfigurationbackend.cpp"

@@ -108,4 +108,10 @@ void QStaticConfiguration::setValue(const QString &key, const QVariant &value)
     d->backend->setValue(key, value);
 }
 
+bool QStaticConfiguration::removeKey(const QString &key)
+{
+    Q_D(const QStaticConfiguration);
+    return d->backend->removeKey(key);
+}
+
 #include "moc_qstaticconfiguration.cpp"

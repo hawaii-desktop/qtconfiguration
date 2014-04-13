@@ -61,6 +61,8 @@ public:
                    const QVariant &defaultValue = QVariant()) const;
     void setValue(const QString &key, const QVariant &value);
 
+    bool removeKey(const QString &key);
+
     void notify(const QString &name, const QVariant &value);
 
 private:

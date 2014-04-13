@@ -60,6 +60,8 @@ public:
     virtual QVariant value(const QString &key,
                            const QVariant &defaultValue = QVariant()) const;
     virtual void setValue(const QString &key, const QVariant &value);
+
+    virtual bool removeKey(const QString &key);
 };
 
 QT_END_NAMESPACE
