@@ -39,6 +39,7 @@
 #include <QtCore/QDebug>
 #include <QtCore/QUrl>
 #include <QtCore/QStringList>
+#include <QDataStream>
 
 #include "qgvariantutils.h"
 
